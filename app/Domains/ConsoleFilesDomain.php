@@ -37,7 +37,6 @@ class ConsoleFilesDomain {
     /**
      * Check source file exists and readable
      * @param string $argumentValue
-     * @return string
      * @throws \Exception
      */
     public function checkSourceFile($argumentValue)
@@ -53,7 +52,6 @@ class ConsoleFilesDomain {
      * Check result file does not exists or writable
      *
      * @param string $argumentValue
-     * @return string
      * @throws \Exception
      */
     public function checkResultFile($argumentValue)
@@ -72,7 +70,7 @@ class ConsoleFilesDomain {
         if (file_put_contents($filePath, '[]') === false) {
             throw new \Exception('Failed to write empty data to result file');
         }
-        return $this->resultFilePath = $filePath;
+        $this->resultFilePath = $filePath;
     }
 
     /**
@@ -102,32 +100,62 @@ class ConsoleFilesDomain {
         $this->sourceData = $data;
     }
 
+    /**
+     * Get field map
+     *
+     * @return array
+     */
     public function getSourceMap()
     {
         return $this->getSourceData(self::DATA_FIELD_MAP);
     }
 
+    /**
+     * Get X of initial position of the Robot
+     *
+     * @return int
+     */
     public function getStartX()
     {
         return $this->getStartSourceData(self::DATA_FIELD_START_X);
     }
 
 
+    /**
+     * Get Y of initial position of the Robot
+     *
+     * @return int
+     */
     public function getStartY()
     {
         return $this->getStartSourceData(self::DATA_FIELD_START_Y);
     }
 
+    /**
+     * Get initial facing of the Robot
+     *
+     * @return string
+     */
     public function getStartFacing()
     {
-        return $this->getStartSourceData(self::DATA_FIELD_START_Y);
+        return $this->getStartSourceData(self::DATA_FIELD_START_FACING);
     }
 
+    /**
+     * Get array of commands to do
+     *
+     * @return array
+     */
     public function getSourceCommands()
     {
         return $this->getSourceData(self::DATA_FIELD_COMMANDS);
     }
 
+    /**
+     * Get initial battery level of the Robot
+     *
+     * @return int
+     */
     public function getStartBattery()
     {
         return $this->getSourceData(self::DATA_FIELD_BATTERY);

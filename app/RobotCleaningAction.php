@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Class RobotCleaningAction
- *
+ *→
  * @package App
  * @property int $id
  * @property string $command
@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $finish_y
  * @property string $finish_facing
  * @property int $finish_battery
+ * @property string $created_at
+ * @property string $updated_at
  */
 class RobotCleaningAction extends Model
 {

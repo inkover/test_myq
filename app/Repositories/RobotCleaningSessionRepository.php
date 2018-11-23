@@ -6,12 +6,17 @@ use App\RobotCleaningSession;
 
 class RobotCleaningSessionRepository {
 
+    public function findByToken($token)
+    {
+        return RobotCleaningSession::where('token', $token)->first();
+    }
+
     /**
      * Create new session
      *
      * @return RobotCleaningSession
      */
-    public function initSession()
+    public function createSession()
     {
         $session = new RobotCleaningSession();
         $session->token = md5(microtime(true));

@@ -21,6 +21,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $x
  * @property int $y
  * @property string $facing
+ * @property string $created_at
+ * @property string $updated_at
  */
 
 class RobotCleaningSession extends Model
