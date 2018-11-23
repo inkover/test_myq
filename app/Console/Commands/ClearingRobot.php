@@ -8,8 +8,12 @@ class ClearingRobot extends Command
 {
 
     const OPTION_SOURCE_FILE = 'sources_file';
-
     const OPTION_RESULT_FILE = 'result_file';
+
+    const DATA_FIELD_MAP = 'map';
+    const DATA_FIELD_START = 'start';
+    const DATA_FIELD_COMMANDS = 'commands';
+    const DATA_FIELD_BATTERY = 'battery';
 
     /**
      * The name and signature of the console command.
@@ -31,6 +35,13 @@ class ClearingRobot extends Command
      * @var string
      */
     protected $sourceFilePath;
+
+    /**
+     * Source data
+     *
+     * @var array
+     */
+    protected $sourceData;
 
     /**
      * Full path of result file
@@ -57,7 +68,7 @@ class ClearingRobot extends Command
     {
         try {
             $this->checkParameters();
-//            $this->parseSourceFile();
+            $this->parseSourceFile();
 //            $this->initSession();
 //            $this->setMap();
 //            $this->setRobotStartPosition();
@@ -132,10 +143,69 @@ class ClearingRobot extends Command
     protected function getFilePath($optionName)
     {
         $optionValue = $this->argument($optionName);
-        $result = realpath($optionValue);
+        if (!empty($optionValue) && $optionValue[0] != '/') {
+            $result = base_path($optionValue);
+        }
         if (empty($result)) {
-            throw new \Exception('Option "' . $optionValue . '" is not a valid path');
+            throw new \Exception('Option ' . $optionName . ' "' . $optionValue . '" is not a valid path');
         }
         return $result;
+    }
+
+    /**
+     * Parse source file and set source data
+     * @throws \Exception
+     */
+    protected function parseSourceFile()
+    {
+        $json = file_get_contents($this->sourceFilePath);
+        if (empty($json)) {
+            throw new \Exception('Source file is empty or not accessible');
+        }
+
+        $data = \json_decode($json, true);
+        if (json_last_error()) {
+            throw new \Exception('Source data JSON parse error: ' . json_last_error_msg());
+        }
+
+        if (!is_array($data)) {
+            throw new \Exception('Source data is not a valid array');
+        }
+        $this->validateSourceData($data, 'map');
+        $this->validateSourceData($data, 'start');
+        $this->validateSourceData($data, 'commands');
+        $this->validateSourceData($data, 'battery', true);
+
+        $this->sourceData = $data;
+        dump($this->sourceData);
+    }
+
+    /**
+     * Check source data fields are valid
+     *
+     * @param array $data
+     * @param string $field
+     * @param bool $isScalar
+     * @throws \Exception
+     */
+    protected function validateSourceData($data, $field, $isScalar = false)
+    {
+        $exceptionPrefix = 'Source data field "' . $field . '" ';
+        if (!isset($data[$field])) {
+            throw new \Exception($exceptionPrefix . 'is not found');
+        }
+        $value = $data[$field];
+        if (empty($value)) {
+            throw new \Exception($exceptionPrefix . 'is empty');
+        }
+        if ($isScalar) {
+            if (!is_scalar($value)) {
+                throw new \Exception($exceptionPrefix . 'expected to be scalar value');
+            }
+            return;
+        }
+        if (!(is_array($value) && count($value))) {
+            throw new \Exception($exceptionPrefix . 'expected to be not empty array');
+        }
     }
 }
