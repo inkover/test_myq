@@ -1,33 +1,17 @@
 <?php
 
-namespace App\Console\Commands;
+namespace App\Domains;
 
-use Illuminate\Console\Command;
 
-class ClearingRobot extends Command
-{
-
-    const OPTION_SOURCE_FILE = 'sources_file';
-    const OPTION_RESULT_FILE = 'result_file';
+class ConsoleFilesDomain {
 
     const DATA_FIELD_MAP = 'map';
     const DATA_FIELD_START = 'start';
     const DATA_FIELD_COMMANDS = 'commands';
     const DATA_FIELD_BATTERY = 'battery';
-
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'robot:clean {' . self::OPTION_SOURCE_FILE . '} {' . self::OPTION_RESULT_FILE . '}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Clearing robot console interface';
+    const DATA_FIELD_START_X = 'X';
+    const DATA_FIELD_START_Y = 'Y';
+    const DATA_FIELD_START_FACING = 'facing';
 
     /**
      * Full path of source file
@@ -51,72 +35,30 @@ class ClearingRobot extends Command
     protected $resultFilePath;
 
     /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    /**
-     * Execute the console command.
-     *
-     */
-    public function handle()
-    {
-        try {
-            $this->checkParameters();
-            $this->parseSourceFile();
-//            $this->initSession();
-//            $this->setMap();
-//            $this->setRobotStartPosition();
-//            $this->setCommands();
-//            $this->setBattery();
-//            $this->executeCommands();
-//            $this->generateResultFile();
-            echo 'OK!';
-        }
-        catch (\Exception $e) {
-            dump($e);
-            $this->error($e->getMessage());
-        }
-    }
-
-    /**
-     * Check Incoming parameters and files existence
-     * @throws \Exception
-     */
-    protected function checkParameters()
-    {
-        $this->sourceFilePath = $this->checkSourceFile();
-        $this->resultFilePath = $this->checkResultFile();
-    }
-
-    /**
      * Check source file exists and readable
-     *
+     * @param string $argumentValue
      * @return string
      * @throws \Exception
      */
-    protected function checkSourceFile()
+    public function checkSourceFile($argumentValue)
     {
-        $filePath = $this->getFilePath(self::OPTION_SOURCE_FILE);
+        $filePath = $this->getFilePath($argumentValue);
         if (!is_readable($filePath)) {
             throw new \Exception('Source file is not readable');
         }
-        return $filePath;
+        $this->sourceFilePath = $filePath;
     }
 
     /**
      * Check result file does not exists or writable
      *
+     * @param string $argumentValue
+     * @return string
      * @throws \Exception
      */
-    protected function checkResultFile()
+    public function checkResultFile($argumentValue)
     {
-        $filePath = $this->getFilePath(self::OPTION_RESULT_FILE);
+        $filePath = $this->getFilePath($argumentValue);
 
         if (file_exists($filePath)) {
             if (!is_file($filePath)) {
@@ -130,33 +72,14 @@ class ClearingRobot extends Command
         if (file_put_contents($filePath, '[]') === false) {
             throw new \Exception('Failed to write empty data to result file');
         }
-        return $filePath;
-    }
-
-    /**
-     * Get full file path from command options
-     *
-     * @param $optionName
-     * @return bool|string
-     * @throws \Exception
-     */
-    protected function getFilePath($optionName)
-    {
-        $optionValue = $this->argument($optionName);
-        if (!empty($optionValue) && $optionValue[0] != '/') {
-            $result = base_path($optionValue);
-        }
-        if (empty($result)) {
-            throw new \Exception('Option ' . $optionName . ' "' . $optionValue . '" is not a valid path');
-        }
-        return $result;
+        return $this->resultFilePath = $filePath;
     }
 
     /**
      * Parse source file and set source data
      * @throws \Exception
      */
-    protected function parseSourceFile()
+    public function parseSourceFile()
     {
         $json = file_get_contents($this->sourceFilePath);
         if (empty($json)) {
@@ -171,14 +94,63 @@ class ClearingRobot extends Command
         if (!is_array($data)) {
             throw new \Exception('Source data is not a valid array');
         }
-        $this->validateSourceData($data, 'map');
-        $this->validateSourceData($data, 'start');
-        $this->validateSourceData($data, 'commands');
-        $this->validateSourceData($data, 'battery', true);
+        $this->validateSourceData($data, self::DATA_FIELD_MAP);
+        $this->validateSourceData($data, self::DATA_FIELD_START);
+        $this->validateSourceData($data, self::DATA_FIELD_COMMANDS);
+        $this->validateSourceData($data, self::DATA_FIELD_BATTERY, true);
 
         $this->sourceData = $data;
-        dump($this->sourceData);
     }
+
+    public function getSourceMap()
+    {
+        return $this->getSourceData(self::DATA_FIELD_MAP);
+    }
+
+    public function getStartX()
+    {
+        return $this->getStartSourceData(self::DATA_FIELD_START_X);
+    }
+
+
+    public function getStartY()
+    {
+        return $this->getStartSourceData(self::DATA_FIELD_START_Y);
+    }
+
+    public function getStartFacing()
+    {
+        return $this->getStartSourceData(self::DATA_FIELD_START_Y);
+    }
+
+    public function getSourceCommands()
+    {
+        return $this->getSourceData(self::DATA_FIELD_COMMANDS);
+    }
+
+    public function getStartBattery()
+    {
+        return $this->getSourceData(self::DATA_FIELD_BATTERY);
+    }
+
+    /**
+     * Get full file path from command options
+     *
+     * @param $optionValue
+     * @return bool|string
+     * @throws \Exception
+     */
+    protected function getFilePath($optionValue)
+    {
+        if (!empty($optionValue) && $optionValue[0] != '/') {
+            $result = base_path($optionValue);
+        }
+        if (empty($result)) {
+            throw new \Exception('File path "' . $optionValue . '" is not a valid path');
+        }
+        return $result;
+    }
+
 
     /**
      * Check source data fields are valid
@@ -208,4 +180,34 @@ class ClearingRobot extends Command
             throw new \Exception($exceptionPrefix . 'expected to be not empty array');
         }
     }
+
+    /**
+     * Get data from source file
+     *
+     * @param $key
+     * @param array $default
+     * @return array|mixed
+     */
+    protected function getSourceData($key, $default = [])
+    {
+        if (!isset($this->sourceData[$key])) {
+            return $default;
+        }
+        return $this->sourceData[$key];
+    }
+
+    /**
+     * Get data from "start" field from source data
+     *
+     * @param $key
+     * @return mixed|null
+     */
+    protected function getStartSourceData($key) {
+        $startData = $this->getSourceData(self::DATA_FIELD_START);
+        if (!isset($startData[$key])) {
+            return null;
+        }
+        return $startData[$key];
+    }
+
 }
