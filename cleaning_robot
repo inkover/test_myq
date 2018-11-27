@@ -1,1 +1,1 @@
-./artisan robot:clean $1 $2
+php artisan robot:clean $1 $2
