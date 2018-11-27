@@ -161,6 +161,11 @@ class ConsoleFilesDomain {
         return $this->getSourceData(self::DATA_FIELD_BATTERY);
     }
 
+    public function storeResultFile($data)
+    {
+        file_put_contents($this->resultFilePath, json_encode($data));
+    }
+
     /**
      * Get full file path from command options
      *

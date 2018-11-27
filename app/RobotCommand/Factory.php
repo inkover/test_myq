@@ -33,7 +33,6 @@ class Factory {
 
     /**
      * @return array
-     * @throws \ReflectionException
      */
     protected function getCommandAliases()
     {
@@ -48,7 +47,6 @@ class Factory {
 
     /**
      * @return array
-     * @throws \ReflectionException
      */
     protected function getCommandClasses()
     {

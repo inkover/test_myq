@@ -55,12 +55,16 @@ class RobotCommanderDomain {
 
     /**
      * @param RobotCleaningSession $session
-     * @throws \Exception
      */
     public function startSessionCommands(RobotCleaningSession $session)
     {
-        $this->session = $session;
-        $this->startCommandsSequence($this->session->commands);
+        try {
+            $this->session = $session;
+            $this->startCommandsSequence($this->session->commands);
+        }
+        catch (\Exception $e) {
+            echo 'FATAL ERROR: ' . $e->getMessage();
+        }
     }
 
     /**
@@ -89,7 +93,6 @@ class RobotCommanderDomain {
             $this->executeCommand($command);
         }
         catch (\Exception $e) {
-            dump($e->getMessage());
             $this->tryBackOff();
         }
     }

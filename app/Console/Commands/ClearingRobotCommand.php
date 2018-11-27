@@ -83,7 +83,7 @@ class ClearingRobotCommand extends Command
             $this->setRobotStartCondition();
             $this->setCommands();
             $this->executeCommands();
-//            $this->generateResultFile();
+            $this->generateResultFile();
             echo 'OK!';
         }
         catch (\Exception $e) {
@@ -146,5 +146,16 @@ class ClearingRobotCommand extends Command
     protected function executeCommands()
     {
         $this->commanderDomain->startSessionCommands($this->cleaningSession);
+    }
+
+    protected function generateResultFile()
+    {
+        $data = [
+            'visited' => $this->sessionRepository->getVisitedCells($this->cleaningSession),
+            'cleaned' => $this->sessionRepository->getCleanedCells($this->cleaningSession),
+            'final' => ['X' => $this->cleaningSession->x, 'Y' => $this->cleaningSession->y, 'facing' => $this->cleaningSession->facing],
+            'battery' => $this->cleaningSession->battery
+        ];
+        $this->filesDomain->storeResultFile($data);
     }
 }

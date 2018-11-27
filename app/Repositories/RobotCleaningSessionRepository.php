@@ -82,4 +82,28 @@ class RobotCleaningSessionRepository {
         $session->battery = $command->getFinishBattery();
         $session->save();
     }
+
+    public function getVisitedCells(RobotCleaningSession $session)
+    {
+        $result = $this->getCells($session, ['A', 'B']);
+        array_push($result, ['X' => $session->start_x, 'Y' => $session->start_y]);
+        return $result;
+    }
+
+    public function getCleanedCells(RobotCleaningSession $session)
+    {
+        return $this->getCells($session, ['C']);
+    }
+
+    protected function getCells(RobotCleaningSession $session, array $commandAliases)
+    {
+        $result = [];
+
+        foreach ($session->actions as $action) {
+            if (in_array($action->command, $commandAliases)) {
+                $result[] = ['X' => $action->finish_x, 'Y' => $action->finish_y];
+            }
+        }
+        return $result;
+    }
 }

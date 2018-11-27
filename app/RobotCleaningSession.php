@@ -23,6 +23,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $facing
  * @property string $created_at
  * @property string $updated_at
+ *
+ * @property RobotCleaningAction[] $actions
  */
 
 class RobotCleaningSession extends Model
@@ -36,8 +38,11 @@ class RobotCleaningSession extends Model
     ];
 
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
     public function actions()
     {
-        return $this->hasMany('App\RobotCleaningAction');
+        return $this->hasMany('App\RobotCleaningAction', 'session_id')->orderBy('id', 'desc');
     }
 }
