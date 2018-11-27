@@ -145,8 +145,6 @@ class ClearingRobotCommand extends Command
 
     protected function executeCommands()
     {
-        foreach ($this->cleaningSession->commands as $command) {
-            $this->commanderDomain->startCommand($this->cleaningSession, $command);
-        }
+        $this->commanderDomain->startSessionCommands($this->cleaningSession);
     }
 }

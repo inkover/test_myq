@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
  *→
  * @package App
  * @property int $id
+ * @property int $session_id
  * @property string $command
  * @property int $start_x
  * @property int $start_y

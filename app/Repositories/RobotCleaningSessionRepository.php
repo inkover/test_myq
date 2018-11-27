@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\RobotCleaningSession;
+use App\RobotCommand;
 
 class RobotCleaningSessionRepository {
 
@@ -66,6 +67,19 @@ class RobotCleaningSessionRepository {
     public function setCommands(RobotCleaningSession $session, array $commands)
     {
         $session->commands = $commands;
+        $session->save();
+    }
+
+    /**
+     * @param RobotCleaningSession $session
+     * @param RobotCommand $command
+     */
+    public function updateRobotPosition(RobotCleaningSession $session, RobotCommand $command)
+    {
+        $session->x = $command->getFinishX();
+        $session->y = $command->getFinishY();
+        $session->facing = $command->getFinishFacing();
+        $session->battery = $command->getFinishBattery();
         $session->save();
     }
 }

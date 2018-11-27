@@ -2,19 +2,35 @@
 
 namespace App\Domains;
 
+use App\Repositories\RobotCleaningActionRepository;
 use App\Repositories\RobotCleaningSessionRepository;
 use App\RobotCleaningSession;
+use App\RobotCommand;
+use App\RobotCommand\Factory as CommandFactory;
 
 class RobotCommanderDomain {
 
+    /**
+     * @var RobotCleaningSessionRepository
+     */
     protected $sessionRepository;
+
+     /**
+     * @var RobotCleaningActionRepository
+     */
+    protected $actionRepository;
+
+    /**
+     * @var CommandFactory
+     */
+    protected $commandFactory;
 
     /**
      * @var RobotCleaningSession
      */
     protected $session;
 
-    protected $backOffStrategyId = -1;
+    protected $backOffStrategyId = 0;
 
     protected $backOffStrategies = [
         ['TR', 'A'],
@@ -26,69 +42,107 @@ class RobotCommanderDomain {
 
     /**
      * RobotCommanderDomain constructor.
+     * @param RobotCleaningSessionRepository $sessionRepository
+     * @param RobotCleaningActionRepository $actionRepository
+     * @param CommandFactory $commandFactory
      */
-    public function __construct(RobotCleaningSessionRepository $sessionRepository)
+    public function __construct(RobotCleaningSessionRepository $sessionRepository, RobotCleaningActionRepository $actionRepository, CommandFactory $commandFactory)
     {
         $this->sessionRepository = $sessionRepository;
+        $this->actionRepository = $actionRepository;
+        $this->commandFactory = $commandFactory;
     }
 
-    public function setCleaningSession(RobotCleaningSession $session)
+    /**
+     * @param RobotCleaningSession $session
+     * @throws \Exception
+     */
+    public function startSessionCommands(RobotCleaningSession $session)
     {
         $this->session = $session;
+        $this->startCommandsSequence($this->session->commands);
     }
 
-    public function startCommand($commandName)
+    /**
+     * @param array $commands
+     * @throws \Exception
+     */
+    protected function startCommandsSequence(array $commands)
     {
-        $command = CommandFactory::getCommand($commandName);
-        $this->checkBatteryEnoughForCommand($command);
-        try {
-            $this->checkCommandIsPossible($command);
+        foreach ($commands as $command) {
+            $this->startCommand($command);
         }
-        catch (\Exception $e) {
-            $this->tryBackoff();
-        }
-        $this->executeCommand($command);
     }
 
-    protected function checkBatteryEnoughForCommand(Command $command)
+    /**
+     * @param string $commandAlias
+     * @throws \Exception
+     */
+    protected function startCommand(string $commandAlias)
     {
-        if ($this->session->battery < $command->required_battery) {
+        $command = $this->commandFactory->getCommand($this->session, $commandAlias);
+        if (!$command->isBatteryEnough()) {
             throw new \Exception('Low battery');
         }
-    }
-
-    protected function tryBackOff() {
-        $backOffCommands = $this->getBackOffCommands();
-        foreach ($backOffCommands as $backOffCommand) {
-            $this->startCommand($backOffCommand);
+        try {
+            $this->checkCommandIsPossible($command);
+            $this->executeCommand($command);
+        }
+        catch (\Exception $e) {
+            dump($e->getMessage());
+            $this->tryBackOff();
         }
     }
 
-    protected function getBackOffCommands()
+    /**
+     * @throws \Exception
+     */
+    protected function tryBackOff() {
+        $this->startCommandsSequence($this->getBackOffSequence());
+    }
+
+    /**
+     * @return array
+     * @throws \Exception
+     */
+    protected function getBackOffSequence()
     {
-        $this->backOffStrategyId ++;
         if (!isset($this->backOffStrategies[$this->backOffStrategyId])) {
             throw new \Exception('No strategies left');
         }
-        return $this->backOffStrategies[$this->backOffStrategyId];
+        $result = $this->backOffStrategies[$this->backOffStrategyId];
+        $this->backOffStrategyId ++;
+        return $result;
     }
 
-    protected function executeCommand(Command $command)
+    /**
+     * @param RobotCommand $command
+     * @throws \Exception
+     */
+    protected function executeCommand(RobotCommand $command)
     {
-        $this->storeAction(
-            $this->session,
-            $command->getNextX(),
-            $command->getNextY(),
-            $command->getNextFacing(),
-            $command->getNextBannery()
-        );
+        $command->execute();
+        $this->storeAction($command);
     }
 
-    protected function checkCommandIsPossible($command)
+    /**
+     * @param RobotCommand $command
+     * @throws \Exception
+     */
+    protected function checkCommandIsPossible(RobotCommand $command)
     {
-        if ($command->getName() != 'A' && $command->getName() != 'B') {
-            return true;
+        if (!$command->isPossible()) {
+
+            throw new \Exception('RobotCommand is not possible. Need to back off');
         }
-        throw new \Exception('Command is not possible. Need to back off');
+    }
+
+    /**
+     * @param RobotCommand $command
+     */
+    protected function storeAction(RobotCommand $command)
+    {
+        $this->sessionRepository->updateRobotPosition($this->session, $command);
+        $this->actionRepository->storeRobotAction($this->session, $command);
     }
 }
